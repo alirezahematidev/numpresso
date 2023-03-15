@@ -1,90 +1,142 @@
-type NumpressoValue = number | string | undefined;
-
-interface Numpresso {
-  format(pattern: string): string;
-  toCurrency(sign?: string): string;
-  toScientific(): string;
-  toNumber(): number;
-  toString(): string;
-  fixedDigits(includeDecimals?: boolean): number;
-  isDecimal(): boolean;
-  isNegative(): boolean;
-  isEven(): boolean;
-  isOdd(): boolean;
-  isGreaterThan(input: NumpressoValue): boolean;
-  isGreaterThanEqual(input: NumpressoValue): boolean;
-  isSmallerThan(input: NumpressoValue): boolean;
-  isSmallerThanEqual(input: NumpressoValue): boolean;
-  isEqual(input: NumpressoValue): boolean;
-  isStrictEqual(input: NumpressoValue): boolean;
-}
+import {
+  Numpresso,
+  NumpressoFormat,
+  NumpressoValue,
+} from "@/types/index.types";
+import { invalidateInput, parse, isUndefined, sliceNumber } from "@/utils";
 
 function numpresso(value: NumpressoValue): Numpresso {
-  let numpressoValue: number | undefined = undefined;
+  invalidateInput(value);
 
-  if (typeof value === 'number' && !isNaN(value)) {
-    numpressoValue = value;
-  } else if (typeof value === 'string' && !isNaN(Number(value))) {
-    numpressoValue = Number(value);
+  const numpressoValue = parse(value);
+
+  function formatter(pattern: string): NumpressoFormat {
+    const RE = /^(\D*)?(\d+)(\D*)?$/g;
+
+    const matches = RE.exec(pattern);
+
+    if (!matches || !matches.length) {
+      return { chunks: [], currency: false };
+    }
+
+    const [, s1, portion, s2] = matches;
+
+    if (!portion || !portion.length) {
+      return { chunks: [], currency: false };
+    }
+
+    const length = portion.length;
+
+    const slices = sliceNumber(numpressoValue, length);
+
+    const start = s1 ?? "";
+    const end = s2 ?? "";
+
+    const chunks = slices.map((slice) => {
+      if (slice.length === length) {
+        return `${start}${slice}${end}`;
+      }
+      return slice;
+    });
+
+    const currency = !start && !end;
+
+    return { chunks, currency };
   }
 
   return {
     format(pattern: string): string {
-      return '';
+      const { chunks, currency } = formatter(pattern);
+
+      if (!chunks.length) {
+        return numpresso(numpressoValue).toString();
+      }
+
+      return chunks.join(currency ? "," : "");
     },
+
     toCurrency(sign?: string): string {
-      return '';
+      const { chunks } = formatter("000");
+
+      if (!chunks.length) {
+        return numpresso(numpressoValue).toString();
+      }
+
+      return chunks.join(",");
     },
+
+    //TODO
     toScientific(): string {
-      return '';
+      return "";
     },
+
+    //TODO
+    fixedDigits(includeDecimals?: boolean): number {
+      return 0;
+    },
+
     toNumber(): number {
       return numpressoValue || 0;
     },
     toString(): string {
       return String(numpressoValue);
     },
-    fixedDigits(includeDecimals?: boolean): number {
-      return 0;
-    },
+
     isDecimal(): boolean {
-      return typeof numpressoValue === 'number' && !Number.isInteger(numpressoValue);
+      return !Number.isInteger(numpressoValue);
     },
     isNegative(): boolean {
-      return typeof numpressoValue === 'number' && numpressoValue < 0;
+      return numpressoValue < 0;
     },
     isEven(): boolean {
-      return typeof numpressoValue === 'number' && numpressoValue % 2 === 0;
+      return numpressoValue % 2 === 0;
     },
     isOdd(): boolean {
-      return typeof numpressoValue === 'number' && numpressoValue % 2 !== 0;
+      return numpressoValue % 2 !== 0;
     },
+
+    isSafe(): boolean {
+      return Number.isSafeInteger(numpressoValue);
+    },
+
     isGreaterThan(input: NumpressoValue): boolean {
+      if (isUndefined(input)) return false;
+
       const otherValue = numpresso(input).toNumber();
-      return typeof numpressoValue === 'number' && otherValue !== null && numpressoValue > otherValue;
+
+      return otherValue !== undefined && numpressoValue > otherValue;
     },
+
     isGreaterThanEqual(input: NumpressoValue): boolean {
+      if (isUndefined(input)) return false;
+
       const otherValue = numpresso(input).toNumber();
-      return typeof numpressoValue === 'number' && otherValue !== null && numpressoValue >= otherValue;
+
+      return otherValue !== undefined && numpressoValue >= otherValue;
     },
-    isSmallerThan(input: NumpressoValue): boolean {
+
+    isLessThan(input: NumpressoValue): boolean {
+      if (isUndefined(input)) return false;
+
       const otherValue = numpresso(input).toNumber();
-      return typeof numpressoValue === 'number' && otherValue !== null && numpressoValue < otherValue;
+
+      return otherValue !== undefined && numpressoValue < otherValue;
     },
-    isSmallerThanEqual(input: NumpressoValue): boolean {
+
+    isLessThanEqual(input: NumpressoValue): boolean {
+      if (isUndefined(input)) return false;
+
       const otherValue = numpresso(input).toNumber();
-      return typeof numpressoValue === 'number' && otherValue !== null && numpressoValue <= otherValue;
+
+      return otherValue !== undefined && numpressoValue <= otherValue;
     },
+
     isEqual(input: NumpressoValue): boolean {
-      const otherValue = numpresso(input).toNumber();
-      return typeof numpressoValue === 'number' && otherValue !== null && numpressoValue === otherValue;
-    },
-    isStrictEqual(input) {
-      return null;
+      if (isUndefined(input)) return false;
+
+      return input !== undefined && numpressoValue === input;
     },
   };
 }
-
-export type { Numpresso, NumpressoValue };
 
 export default numpresso;

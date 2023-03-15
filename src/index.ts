@@ -1,5 +1,5 @@
-import numpresso from './core';
-import type { Numpresso, NumpressoValue } from './core';
+import numpresso from "./core";
+import { Numpresso, NumpressoValue } from "./types/index.types";
 
 export default numpresso;
 
