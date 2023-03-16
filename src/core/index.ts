@@ -1,4 +1,4 @@
-import { Numpresso, NumpressoValue } from '@/types/index.types';
+import { Numpresso, NumpressoValue } from '@/types';
 import { invalidateInput, parse, isUndefined, formatter, safeToFixed } from '@/helpers';
 
 function numpresso(value: NumpressoValue): Numpresso {

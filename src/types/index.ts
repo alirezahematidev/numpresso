@@ -5,7 +5,7 @@ export type NumpressoResult = {
   currency: boolean;
 };
 
-export interface Numpresso {
+export type Numpresso = {
   format(pattern: string, separator?: string): string;
   percent(decimalDigits?: number): string;
   toCurrency(sign?: string): string;
@@ -23,4 +23,6 @@ export interface Numpresso {
   isLessThan(input: NumpressoValue): boolean;
   isLessThanEqual(input: NumpressoValue): boolean;
   isEqual(input: NumpressoValue): boolean;
-}
+};
+
+export type NumpressoFn = (value: NumpressoValue) => Numpresso;

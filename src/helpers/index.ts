@@ -1,4 +1,4 @@
-import { NumpressoValue } from '..';
+import { NumpressoValue } from '@/types';
 
 export function isString(value: NumpressoValue): value is string {
   return value !== undefined && typeof value === 'string';
