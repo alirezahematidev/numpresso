@@ -1,23 +1,41 @@
 {
   "name": "numpresso",
   "version": "0.0.1",
-  "description": "",
+  "author": "Alireza Hemati",
+  "description": "A tool for number formatting",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "types": "dist/index.d.ts",
+  "license": "MIT",
   "scripts": {
     "build": "webpack --mode=production",
     "watch": "webpack --mode=development --watch",
     "test": "npx playwright test",
-    "report": "npx playwright show-report"
+    "report": "npx playwright show-report",
+    "release": "yarn test && yarn build && yarn publish"
   },
   "files": [
     "dist",
     "README.md"
   ],
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alirezahematidev/numpresso.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alirezahematidev/numpresso/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "keywords": [
+    "number",
+    "format"
+  ],
+  "eslintIgnore": [
+    "dist/*"
+  ],
   "devDependencies": {
     "@playwright/test": "^1.31.2",
     "ts-loader": "^9.4.2",
