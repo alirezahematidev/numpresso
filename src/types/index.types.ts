@@ -1,17 +1,18 @@
 export type NumpressoValue = number | string | undefined;
 
-export type NumpressoFormat = {
+export type NumpressoResult = {
   chunks: string[];
   currency: boolean;
 };
 
 export interface Numpresso {
-  format(pattern: string): string;
+  format(pattern: string, separator?: string): string;
+  percent(decimalDigits?: number): string;
   toCurrency(sign?: string): string;
   toScientific(): string;
   toNumber(): number;
   toString(): string;
-  fixedDigits(includeDecimals?: boolean): number;
+  fixedDigits(digits: number, includeDecimals?: boolean): number;
   isDecimal(): boolean;
   isNegative(): boolean;
   isEven(): boolean;
