@@ -4,57 +4,75 @@ import { invalidateInput, parse, isUndefined, formatter, safeToFixed } from '@/h
 function numpresso(value: NumpressoValue): Numpresso {
   invalidateInput(value);
 
-  const numpressoValue = parse(value);
-
   return {
     format(pattern, separator): string {
-      const chunks = formatter(numpressoValue, pattern);
+      const numpressoValue = parse(value);
 
-      if (!chunks.length) {
+      const valueString = numpresso(numpressoValue).toString();
+
+      const dot = valueString.indexOf('.');
+
+      if (dot !== -1) {
+        const [integer, decimal] = valueString.split('.');
+
+        const formatted = formatter(numpresso(integer).toNumber(), pattern, separator);
+
+        if (!formatted) {
+          return valueString;
+        }
+
+        return [formatted, decimal].join('.');
+      }
+
+      const formatted = formatter(numpresso(numpressoValue).toNumber(), pattern, separator);
+
+      if (!formatted) {
         return numpresso(numpressoValue).toString();
       }
 
-      const onlyDigits = /^\d+$/.test(pattern);
-
-      const defaultSeparator = onlyDigits ? ',' : '';
-
-      return chunks.join(separator ?? defaultSeparator);
+      return formatted;
     },
 
     percent(decimalDigits): string {
-      const value = numpressoValue / 100;
+      const numpressoValue = parse(value);
 
-      let percent = numpresso(value).toString();
+      const percentValue = numpresso(numpressoValue).toNumber() / 100;
+
+      let percent = numpresso(percentValue).toString();
 
       if (decimalDigits === undefined) {
-        if (value >= 1) {
+        if (percentValue >= 1) {
           return percent + '%';
         }
 
-        const d = Math.max(0, -Math.floor(Math.log10(Math.abs(value))) + 2);
+        const d = Math.max(0, -Math.floor(Math.log10(Math.abs(percentValue))) + 2);
 
-        return safeToFixed(value, d) + '%';
+        return safeToFixed(percentValue, d) + '%';
       }
 
-      return safeToFixed(value, decimalDigits) + '%';
+      return safeToFixed(percentValue, decimalDigits) + '%';
     },
 
     toCurrency(sign): string {
-      const chunks = formatter(numpressoValue, '000');
+      const numpressoValue = parse(value);
 
-      if (!chunks.length) {
+      const formatted = numpresso(numpressoValue).format('000');
+
+      if (!formatted) {
         return numpresso(numpressoValue).toString();
       }
 
       sign = sign ?? '';
 
-      return sign + chunks.join(',');
+      return sign + formatted;
     },
 
-    toScientific(): string {
-      const sign = Math.sign(numpressoValue);
+    toScientific(): Numpresso {
+      const numpressoValue = parse(value);
 
-      let value: NumpressoValue = undefined;
+      const sign = Math.sign(numpresso(numpressoValue).toNumber());
+
+      let sValue: NumpressoValue = undefined;
 
       if (/^(\-?)\d+\.?\d*e[\+\-]*\d+/i.test(String(numpressoValue))) {
         const zero = '0';
@@ -72,26 +90,28 @@ function numpresso(value: NumpressoValue): Numpresso {
         if (direction === -1) {
           coeff_array[0] = Math.abs(Number(coeff_array[0]));
 
-          value = zero + '.' + new Array(l).join(zero) + coeff_array.join('');
+          sValue = zero + '.' + new Array(l).join(zero) + coeff_array.join('');
         } else {
           const dec = coeff_array[1];
 
           if (dec) l = l - dec.toString().length;
 
-          value = coeff_array.join('') + new Array(l + 1).join(zero);
+          sValue = coeff_array.join('') + new Array(l + 1).join(zero);
         }
 
-        if (sign < 0 && Number(value) > 0) {
-          return '-' + String(value);
+        if (sign < 0 && Number(sValue) > 0) {
+          return numpresso('-' + String(sValue));
         }
 
-        return String(value);
+        return numpresso(sValue);
       }
 
-      return numpresso(numpressoValue).toString();
+      return numpresso(numpressoValue);
     },
 
     fixedDigits(digits, includeDecimals): number {
+      const numpressoValue = parse(value);
+
       const input = numpresso(numpressoValue).toString();
 
       if (input.indexOf('.') === -1) {
@@ -122,62 +142,86 @@ function numpresso(value: NumpressoValue): Numpresso {
     },
 
     toNumber(): number {
-      return numpressoValue || 0;
+      const numpressoValue = parse(value);
+
+      return Number(numpressoValue || 0);
     },
     toString(): string {
+      const numpressoValue = parse(value);
+
       return numpressoValue.toString();
     },
 
     isDecimal(): boolean {
+      const numpressoValue = parse(value);
+
       return !Number.isInteger(numpressoValue);
     },
     isNegative(): boolean {
-      return numpressoValue < 0;
+      const numpressoValue = parse(value);
+
+      return numpresso(numpressoValue).toNumber() < 0;
     },
     isEven(): boolean {
-      return numpressoValue % 2 === 0;
+      const numpressoValue = parse(value);
+
+      return numpresso(numpressoValue).toNumber() % 2 === 0;
     },
     isOdd(): boolean {
-      return numpressoValue % 2 !== 0;
+      const numpressoValue = parse(value);
+
+      return numpresso(numpressoValue).toNumber() % 2 !== 0;
     },
 
     isSafe(): boolean {
+      const numpressoValue = parse(value);
+
       return Number.isSafeInteger(numpressoValue);
     },
 
     isGreaterThan(input): boolean {
+      const numpressoValue = parse(value);
+
       if (isUndefined(input)) return false;
 
       const otherValue = numpresso(input).toNumber();
 
-      return otherValue !== undefined && numpressoValue > otherValue;
+      return otherValue !== undefined && numpresso(numpressoValue).toNumber() > otherValue;
     },
 
     isGreaterThanEqual(input): boolean {
+      const numpressoValue = parse(value);
+
       if (isUndefined(input)) return false;
 
       const otherValue = numpresso(input).toNumber();
 
-      return otherValue !== undefined && numpressoValue >= otherValue;
+      return otherValue !== undefined && numpresso(numpressoValue).toNumber() >= otherValue;
     },
 
     isLessThan(input): boolean {
+      const numpressoValue = parse(value);
+
       if (isUndefined(input)) return false;
 
       const otherValue = numpresso(input).toNumber();
 
-      return otherValue !== undefined && numpressoValue < otherValue;
+      return otherValue !== undefined && numpresso(numpressoValue).toNumber() < otherValue;
     },
 
     isLessThanEqual(input): boolean {
+      const numpressoValue = parse(value);
+
       if (isUndefined(input)) return false;
 
       const otherValue = numpresso(input).toNumber();
 
-      return otherValue !== undefined && numpressoValue <= otherValue;
+      return otherValue !== undefined && numpresso(numpressoValue).toNumber() <= otherValue;
     },
 
     isEqual(input): boolean {
+      const numpressoValue = parse(value);
+
       if (isUndefined(input)) return false;
 
       return input !== undefined && numpressoValue === input;

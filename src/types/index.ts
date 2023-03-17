@@ -9,7 +9,7 @@ export type Numpresso = {
   format(pattern: string, separator?: string): string;
   percent(decimalDigits?: number): string;
   toCurrency(sign?: string): string;
-  toScientific(): string;
+  toScientific(): Numpresso;
   toNumber(): number;
   toString(): string;
   fixedDigits(digits: number, includeDecimals?: boolean): number;

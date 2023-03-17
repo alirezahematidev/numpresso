@@ -12,13 +12,17 @@ export function isNumber(value: NumpressoValue): value is number {
   return value !== undefined && typeof value === 'number';
 }
 
-export function parse(value: NumpressoValue): number {
-  let numpressoValue: number | undefined = undefined;
+export function parse(value: NumpressoValue): NumpressoValue {
+  let numpressoValue: NumpressoValue = undefined;
 
   if (typeof value === 'number' && !isNaN(value)) {
     numpressoValue = Number(value.toString());
   } else if (typeof value === 'string' && !isNaN(Number(value))) {
-    numpressoValue = Number(value);
+    numpressoValue = value;
+  }
+
+  if (isUndefined(value)) {
+    throw new Error(`ERROR: The given input could not parsed. input: ${value}\n`);
   }
 
   return numpressoValue;
@@ -37,19 +41,19 @@ export function sliceNumber(value: number, length: number): string[] {
   return chunks;
 }
 
-export function formatter(value: number, pattern: string): string[] {
+export function formatter(value: number, pattern: string, separator?: string): string {
   const RE = /^(\D*)?(\d+)(\D*)?$/g;
 
   const matches = RE.exec(pattern);
 
   if (!matches || !matches.length) {
-    return [];
+    return '';
   }
 
   const [, s1, portion, s2] = matches;
 
   if (!portion || !portion.length) {
-    return [];
+    return '';
   }
 
   const length = portion.length;
@@ -66,7 +70,15 @@ export function formatter(value: number, pattern: string): string[] {
     return slice;
   });
 
-  return chunks;
+  if (!chunks.length) {
+    return value.toString();
+  }
+
+  const onlyDigits = /^\d+$/.test(pattern);
+
+  const defaultSeparator = onlyDigits ? ',' : '';
+
+  return chunks.join(separator ?? defaultSeparator);
 }
 
 export function safeToFixed(input: number, decimalDigits: number) {
@@ -90,13 +102,14 @@ export function isInvalid(value: NumpressoValue) {
 
 export function invalidateInput(value: NumpressoValue): void {
   if (isInvalid(value)) {
-    const message = `ERROR (INVALID): Could not parse the input. the given input: ${value}`;
+    console.log({ value });
+    const message = `ERROR (INVALID): Could not parse the input. the given input: ${value}\n`;
 
     throw new Error(message);
   }
 
-  if (!Number.isFinite(parse(value))) {
-    const message = `ERROR (INFINITE): Could not parse the input. the given input: ${value}`;
+  if (!Number.isFinite(Number(parse(value)))) {
+    const message = `ERROR (INFINITE): Could not parse the input. the given input: ${value}\n`;
 
     throw new Error(message);
   }

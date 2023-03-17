@@ -87,6 +87,7 @@ test('check input is format for 000', async () => {
 
 test('check input is format for (000)', async () => {
   expect(numpresso(100_000).format('(000)')).toBe('(100)(000)');
+  expect(numpresso(100_000.56).format('(000)')).toBe('(100)(000).56');
   expect(numpresso(10_000).format('(000)')).toBe('10(000)');
 });
 
@@ -125,6 +126,7 @@ test('check input is format for invalid pattern', async () => {
 
 test('check input is currency', async () => {
   expect(numpresso(100_000).toCurrency('$')).toBe('$100,000');
+  expect(numpresso(1234.56).toCurrency('$')).toBe('$1,234.56');
   expect(numpresso(100).toCurrency('$')).toBe('$100');
   expect(numpresso(10).toCurrency('$')).toBe('$10');
   expect(numpresso(152593359).toCurrency()).toBe('152,593,359');
@@ -153,10 +155,11 @@ test('check input is fixed digits by 4 includes decimal', async () => {
   expect(numpresso(10.56431).fixedDigits(4, true)).toBe(10.5);
 });
 test('check input is scientific', async () => {
-  expect(numpresso(1e15).toScientific()).toBe('1000000000000000');
-  expect(numpresso(1e30).toScientific()).toBe('1000000000000000000000000000000');
-  expect(numpresso(1e-15).toScientific()).toBe('0.000000000000001');
-  expect(numpresso(1e-3).toScientific()).toBe('0.001');
-  expect(numpresso(-1e-14).toScientific()).toBe('-0.00000000000001');
-  expect(numpresso(-1e-3).toScientific()).toBe('-0.001');
+  expect(numpresso(1e15).toScientific().toString()).toBe('1000000000000000');
+  expect(numpresso(1e15).toScientific().toCurrency()).toBe('1,000,000,000,000,000');
+  expect(numpresso(1e15).toScientific().format('[00]')).toBe('[10][00][00][00][00][00][00][00]');
+  expect(numpresso(1e-15).toScientific().toString()).toBe('0.000000000000001');
+  expect(numpresso(1e-3).toScientific().toString()).toBe('0.001');
+  expect(numpresso(-1e-14).toScientific().toString()).toBe('-0.00000000000001');
+  expect(numpresso(-1e-3).toScientific().toString()).toBe('-0.001');
 });
