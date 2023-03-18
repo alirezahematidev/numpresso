@@ -5,14 +5,24 @@ export type NumpressoResult = {
   currency: boolean;
 };
 
+export type NumberOptions = {
+  negative?: boolean;
+  decimal?: boolean;
+  max?: number;
+  min?: number;
+};
+
 export type Numpresso = {
   format(pattern: string, separator?: string): string;
   percent(decimalDigits?: number): string;
+  parseNumber(): Numpresso;
+  toStringNumber(): string;
   toCurrency(sign?: string): string;
   toScientific(): Numpresso;
+  normalizeUrl(): string;
   toNumber(): number;
   toString(): string;
-  fixedDigits(digits: number, includeDecimals?: boolean): number;
+  fixedDigits(digits: number, includeDecimals?: boolean): Numpresso;
   isDecimal(): boolean;
   isNegative(): boolean;
   isEven(): boolean;

@@ -1,36 +1,29 @@
-import { Numpresso, NumpressoValue } from '@/types';
-import { invalidateInput, parse, isUndefined, formatter, safeToFixed } from '@/helpers';
+import { NumberOptions, Numpresso, NumpressoValue } from "@/types";
+import {
+  parse,
+  isUndefined,
+  formatter,
+  safeToFixed,
+  isString,
+  normalizeNumber,
+} from "@/helpers";
 
 function numpresso(value: NumpressoValue): Numpresso {
-  invalidateInput(value);
-
   return {
     format(pattern, separator): string {
       const numpressoValue = parse(value);
 
-      const valueString = numpresso(numpressoValue).toString();
+      const str = numpresso(numpressoValue).toString();
 
-      const dot = valueString.indexOf('.');
+      const [integer, decimal] = str.split(".");
 
-      if (dot !== -1) {
-        const [integer, decimal] = valueString.split('.');
-
-        const formatted = formatter(numpresso(integer).toNumber(), pattern, separator);
-
-        if (!formatted) {
-          return valueString;
-        }
-
-        return [formatted, decimal].join('.');
-      }
-
-      const formatted = formatter(numpresso(numpressoValue).toNumber(), pattern, separator);
+      const formatted = formatter(parseInt(integer), pattern, separator);
 
       if (!formatted) {
-        return numpresso(numpressoValue).toString();
+        return str;
       }
 
-      return formatted;
+      return decimal ? [formatted, decimal].join(".") : formatted;
     },
 
     percent(decimalDigits): string {
@@ -42,27 +35,30 @@ function numpresso(value: NumpressoValue): Numpresso {
 
       if (decimalDigits === undefined) {
         if (percentValue >= 1) {
-          return percent + '%';
+          return percent + "%";
         }
 
-        const d = Math.max(0, -Math.floor(Math.log10(Math.abs(percentValue))) + 2);
+        const d = Math.max(
+          0,
+          -Math.floor(Math.log10(Math.abs(percentValue))) + 2
+        );
 
-        return safeToFixed(percentValue, d) + '%';
+        return safeToFixed(percentValue, d) + "%";
       }
 
-      return safeToFixed(percentValue, decimalDigits) + '%';
+      return safeToFixed(percentValue, decimalDigits) + "%";
     },
 
     toCurrency(sign): string {
       const numpressoValue = parse(value);
 
-      const formatted = numpresso(numpressoValue).format('000');
+      const formatted = numpresso(numpressoValue).format("000");
 
       if (!formatted) {
         return numpresso(numpressoValue).toString();
       }
 
-      sign = sign ?? '';
+      sign = sign ?? "";
 
       return sign + formatted;
     },
@@ -75,9 +71,9 @@ function numpresso(value: NumpressoValue): Numpresso {
       let sValue: NumpressoValue = undefined;
 
       if (/^(\-?)\d+\.?\d*e[\+\-]*\d+/i.test(String(numpressoValue))) {
-        const zero = '0';
+        const zero = "0";
 
-        const parts = String(numpressoValue).toLowerCase().split('e');
+        const parts = String(numpressoValue).toLowerCase().split("e");
 
         const e = parts.pop();
 
@@ -85,22 +81,22 @@ function numpresso(value: NumpressoValue): Numpresso {
 
         const direction = Number(e) / l;
 
-        const coeff_array = parts[0].split('.').map((i) => Number(i));
+        const coeff_array = parts[0].split(".").map((i) => Number(i));
 
         if (direction === -1) {
           coeff_array[0] = Math.abs(Number(coeff_array[0]));
 
-          sValue = zero + '.' + new Array(l).join(zero) + coeff_array.join('');
+          sValue = zero + "." + new Array(l).join(zero) + coeff_array.join("");
         } else {
           const dec = coeff_array[1];
 
           if (dec) l = l - dec.toString().length;
 
-          sValue = coeff_array.join('') + new Array(l + 1).join(zero);
+          sValue = coeff_array.join("") + new Array(l + 1).join(zero);
         }
 
         if (sign < 0 && Number(sValue) > 0) {
-          return numpresso('-' + String(sValue));
+          return numpresso("-" + String(sValue));
         }
 
         return numpresso(sValue);
@@ -109,43 +105,75 @@ function numpresso(value: NumpressoValue): Numpresso {
       return numpresso(numpressoValue);
     },
 
-    fixedDigits(digits, includeDecimals): number {
-      const numpressoValue = parse(value);
-
-      const input = numpresso(numpressoValue).toString();
-
-      if (input.indexOf('.') === -1) {
-        return numpresso(input.substring(0, digits)).toNumber();
+    normalizeUrl(): string {
+      if (!isString(value)) {
+        throw new Error("The input must be a string");
       }
 
-      const [integer, decimal] = input.split('.');
+      let url = value;
+
+      if (/^(wss?(:|\/))/i.test(url)) {
+        url = url.replace(/^(ws)?(s)?(:*)(\/+)?/i, `ws$2://`);
+      } else if (/^(ftps?(:|\/))/i.test(url)) {
+        url = url.replace(/^(ftp)?(s)?(:*)(\/+)?/i, `ftp$2://`);
+      } else {
+        url = url.replace(/^(http)?(s)?(:*)(\/+)?/i, `http$2://`);
+      }
+
+      url = url.replace(/(\/?)$/i, `/`);
+
+      return url;
+    },
+
+    parseNumber(): Numpresso {
+      const numpressoValue = normalizeNumber(value);
+
+      return numpresso(numpressoValue);
+    },
+
+    toStringNumber(): string {
+      const numpressoValue = normalizeNumber(value);
+
+      return numpressoValue;
+    },
+
+    fixedDigits(digits, includeDecimals): Numpresso {
+      const input = normalizeNumber(value).toString();
+
+      if (input.indexOf(".") === -1) {
+        return numpresso(input.substring(0, digits));
+      }
+
+      const [integer, decimal] = input.split(".");
 
       if (includeDecimals) {
         if (decimal.length > digits) {
           const decimalSlice = decimal.substring(0, decimal.length - digits);
 
-          return numpresso([integer, decimalSlice].join('.')).toNumber();
+          return numpresso([integer, decimalSlice].join("."));
         }
 
         if (decimal.length === digits) {
-          return numpresso(integer).toNumber();
+          return numpresso(integer);
         }
 
-        const integerSlice = integer.substring(0, (integer + decimal).length - digits);
+        const integerSlice = integer.substring(
+          0,
+          (integer + decimal).length - digits
+        );
 
-        return numpresso(integerSlice).toNumber();
+        return numpresso(integerSlice);
       }
 
       const slice = integer.substring(0, digits);
 
-      return numpresso([slice, decimal].join('.')).toNumber();
+      return numpresso([slice, decimal].join("."));
     },
 
-    toNumber(): number {
-      const numpressoValue = parse(value);
-
-      return Number(numpressoValue || 0);
+    toNumber(options?: NumberOptions): number {
+      return Number(normalizeNumber(value, options));
     },
+
     toString(): string {
       const numpressoValue = parse(value);
 
@@ -153,70 +181,86 @@ function numpresso(value: NumpressoValue): Numpresso {
     },
 
     isDecimal(): boolean {
-      const numpressoValue = parse(value);
+      const numpressoValue = normalizeNumber(value);
 
-      return !Number.isInteger(numpressoValue);
+      return !Number.isInteger(Number(numpressoValue));
     },
     isNegative(): boolean {
-      const numpressoValue = parse(value);
+      const numpressoValue = normalizeNumber(value);
 
-      return numpresso(numpressoValue).toNumber() < 0;
+      return Number(numpressoValue) < 0;
     },
     isEven(): boolean {
-      const numpressoValue = parse(value);
+      if (numpresso(value).isDecimal()) {
+        throw new Error("The input value must be an integer");
+      }
 
-      return numpresso(numpressoValue).toNumber() % 2 === 0;
+      const numpressoValue = normalizeNumber(value);
+
+      return Number(numpressoValue) % 2 === 0;
     },
     isOdd(): boolean {
-      const numpressoValue = parse(value);
+      if (numpresso(value).isDecimal()) {
+        throw new Error("The input value must be an integer");
+      }
 
-      return numpresso(numpressoValue).toNumber() % 2 !== 0;
+      const numpressoValue = normalizeNumber(value);
+
+      return Number(numpressoValue) % 2 !== 0;
     },
 
     isSafe(): boolean {
-      const numpressoValue = parse(value);
+      const numpressoValue = normalizeNumber(value);
 
-      return Number.isSafeInteger(numpressoValue);
+      return Number.isSafeInteger(Number(numpressoValue));
     },
 
     isGreaterThan(input): boolean {
-      const numpressoValue = parse(value);
+      const numpressoValue = normalizeNumber(value);
 
       if (isUndefined(input)) return false;
 
-      const otherValue = numpresso(input).toNumber();
+      const otherValue = normalizeNumber(input);
 
-      return otherValue !== undefined && numpresso(numpressoValue).toNumber() > otherValue;
+      return (
+        otherValue !== undefined && Number(numpressoValue) > Number(otherValue)
+      );
     },
 
     isGreaterThanEqual(input): boolean {
-      const numpressoValue = parse(value);
+      const numpressoValue = normalizeNumber(value);
 
       if (isUndefined(input)) return false;
 
-      const otherValue = numpresso(input).toNumber();
+      const otherValue = normalizeNumber(input);
 
-      return otherValue !== undefined && numpresso(numpressoValue).toNumber() >= otherValue;
+      return (
+        otherValue !== undefined && Number(numpressoValue) >= Number(otherValue)
+      );
     },
 
     isLessThan(input): boolean {
-      const numpressoValue = parse(value);
+      const numpressoValue = normalizeNumber(value);
 
       if (isUndefined(input)) return false;
 
-      const otherValue = numpresso(input).toNumber();
+      const otherValue = normalizeNumber(input);
 
-      return otherValue !== undefined && numpresso(numpressoValue).toNumber() < otherValue;
+      return (
+        otherValue !== undefined && Number(numpressoValue) < Number(otherValue)
+      );
     },
 
     isLessThanEqual(input): boolean {
-      const numpressoValue = parse(value);
+      const numpressoValue = normalizeNumber(value);
 
       if (isUndefined(input)) return false;
 
-      const otherValue = numpresso(input).toNumber();
+      const otherValue = normalizeNumber(input);
 
-      return otherValue !== undefined && numpresso(numpressoValue).toNumber() <= otherValue;
+      return (
+        otherValue !== undefined && Number(numpressoValue) <= Number(otherValue)
+      );
     },
 
     isEqual(input): boolean {
