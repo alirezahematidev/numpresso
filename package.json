@@ -1,6 +1,6 @@
 {
   "name": "numpresso",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "author": "Alireza Hemati",
   "description": "A tool for number formatting",
   "main": "dist/index.js",
